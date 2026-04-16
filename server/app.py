@@ -2,35 +2,71 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import numpy as np
 import os
+import base64
+import pickle
+
+from crypto_utils import derive_key, decrypt
 
 app = FastAPI()
 
-# Folder to store MFCC files
+# Check for data directory
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Define expected request format
-class MFCCRequest(BaseModel):
+class AuthRequest(BaseModel):
     user_id: str
-    mfcc: list  # 2D list
+    client_pub_key: str
+    iv: str
+    ciphertext: str
 
-@app.get("/")
-def root():
-    return {"message": "IoT Auth Server Running"}
+# Calculate distance of MFCCs
+def compare_mfcc(mfcc1, mfcc2):
+    # Ensure same shape
+    if mfcc1.shape != mfcc2.shape:
+        return float("inf")
 
-@app.post("/upload")
-def upload_mfcc(data: MFCCRequest):
-    # Convert list → NumPy array
-    mfcc_array = np.array(data.mfcc)
+    return np.linalg.norm(mfcc1 - mfcc2)
 
-    # Build filename (one per user)
-    file_path = os.path.join(DATA_DIR, f"{data.user_id}.npy")
+@app.post("/authenticate")
+def authenticate(req: AuthRequest):
+    # Derive key
+    key = derive_key(req.client_pub_key.encode())
 
-    # Save MFCC
-    np.save(file_path, mfcc_array)
+    # Decode inputs from text into bytes
+    iv = base64.b64decode(req.iv)
+    ciphertext = base64.b64decode(req.ciphertext)
 
-    return {
-        "status": "saved",
-        "user": data.user_id,
-        "shape": mfcc_array.shape
-    }
+    # Decrypt MFCC
+    decrypted_bytes = decrypt(key, iv, ciphertext)
+
+    # Deserialize MFCC back into a Python object
+    mfcc = pickle.loads(decrypted_bytes)
+    mfcc = np.array(mfcc)
+
+    if mfcc.shape != (20, 216):
+        return {"error": f"Invalid MFCC shape {mfcc.shape}"}
+
+    file_path = os.path.join(DATA_DIR, f"{req.user_id}.npy")
+
+    # Enroll if not already
+    if not os.path.exists(file_path):
+        np.save(file_path, mfcc)
+        return {"status": "enrolled", "user": req.user_id}
+
+    # Authenticate if enrolled
+    stored = np.load(file_path)
+
+    distance = compare_mfcc(mfcc, stored)
+
+    THRESHOLD = 50 # threshold for MFCC match -- may need tuning
+
+    if distance < THRESHOLD:
+        return {
+            "status": "authenticated",
+            "distance": float(distance)
+        }
+    else:
+        return {
+            "status": "rejected",
+            "distance": float(distance)
+        }
