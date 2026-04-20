@@ -98,6 +98,20 @@ def fix_mfcc_shape(mfcc):
 
     return mfcc
 
+
+# Print client keypair
+print("\nCLIENT KEYS:")
+print("\nClient Public Key: ",get_client_public_bytes().decode())
+print("\nClient Private Key: ", client_private_key)
+# Print server public key
+print("\nSERVER PUBLIC KEY:")
+server_pub = get_server_public_key()
+print("\n",server_pub.decode())
+# Print shared key
+print("\nCLIENT DERIVED SHARED KEY:")
+key = derive_shared_key(server_pub)
+print("\n",key.hex())
+
 ## This checks for a users directory and makes it if it doesnt exist
 os.makedirs("users", exist_ok=True)
 
