@@ -4,8 +4,10 @@ import numpy as np
 import os
 import base64
 import pickle
+from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
 
-from crypto_utils import derive_key, decrypt
+from crypto_utils import derive_key, decrypt, get_public_key_bytes
 
 app = FastAPI()
 
@@ -21,11 +23,29 @@ class AuthRequest(BaseModel):
 
 # Calculate distance of MFCCs
 def compare_mfcc(mfcc1, mfcc2):
-    # Ensure same shape
-    if mfcc1.shape != mfcc2.shape:
-        return float("inf")
+    print("dtype mfcc1:", mfcc1.dtype)
+    print("dtype mfcc2:", mfcc2.dtype)
 
-    return np.linalg.norm(mfcc1 - mfcc2)
+    print("shape mfcc1:", mfcc1.shape)
+    print("shape mfcc2:", mfcc2.shape)
+
+    print("nan mfcc1:", np.isnan(mfcc1).any())
+    print("nan mfcc2:", np.isnan(mfcc2).any())
+
+    mfcc1 = mfcc1.T
+    mfcc2 = mfcc2.T
+
+    distance, _ = fastdtw(mfcc1, mfcc2, dist=euclidean)
+
+    return distance / len(mfcc1)
+
+@app.get("/")
+def root():
+    return {"message": "IoT Auth Server Running"}
+
+@app.get("/public-key")
+def public_key():
+    return {"public_key": get_public_key_bytes().decode()}
 
 @app.post("/authenticate")
 def authenticate(req: AuthRequest):

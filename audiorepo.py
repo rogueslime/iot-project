@@ -26,12 +26,12 @@ def get_client_public_bytes():
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
 
-# --- GET SERVER PUBLIC KEY ---, TB
+# Get public key from server, TB
 def get_server_public_key():
     res = requests.get("http://localhost:8000/public-key")
     return res.json()["public_key"].encode()
 
-# --- DERIVE SHARED KEY ---, TB
+# Shared key derivation, TB
 def derive_shared_key(server_pub_bytes):
     server_pub = serialization.load_pem_public_key(server_pub_bytes)
 
@@ -44,7 +44,7 @@ def derive_shared_key(server_pub_bytes):
         info=b'iot-auth'
     ).derive(shared)
 
-# --- ENCRYPT MFCC ---, TB
+# MFCC encryption,, TB
 def encrypt_mfcc(mfcc, key):
     data = pickle.dumps(mfcc)
 
@@ -84,14 +84,12 @@ TARGET_MFCC = 20
 TARGET_FRAMES = 216
 
 def fix_mfcc_shape(mfcc):
-    # --- Ensure correct number of coefficients ---
     if mfcc.shape[0] > TARGET_MFCC:
         mfcc = mfcc[:TARGET_MFCC, :]
     elif mfcc.shape[0] < TARGET_MFCC:
         pad = TARGET_MFCC - mfcc.shape[0]
-        mfcc = np.pad(mfcc, ((0, pad), (0, 0)), mode='constant')
+        mfcc = np.pad(mfcc, ((0, pad), (0, 0)), mode='reflect')
 
-    # --- Ensure correct number of time frames ---
     if mfcc.shape[1] > TARGET_FRAMES:
         mfcc = mfcc[:, :TARGET_FRAMES]
     elif mfcc.shape[1] < TARGET_FRAMES:
@@ -203,7 +201,12 @@ def record(username):
 	## this sleep is important, do not remove it. Otherwise the program will just record your keyboard
 	time.sleep(0.5)
 	print("recording")
-	recording = sd.rec(int(duration * samplerate))
+	recording = sd.rec(
+    	int(duration * samplerate),
+    	samplerate=samplerate,
+    	channels=2,
+    	dtype='float32'
+	)
 	sd.wait()
 	output = f"{username}.wav"
 	write(output, samplerate, recording)
