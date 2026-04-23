@@ -5,7 +5,7 @@ import os
 import base64
 import pickle
 from fastdtw import fastdtw
-from scipy.spatial.distance import euclidean
+from scipy.spatial.distance import euclidean, cosine
 
 from crypto_utils import derive_key, decrypt, get_public_key_bytes
 
@@ -42,9 +42,9 @@ def compare_mfcc(mfcc1, mfcc2):
     mfcc1 = mfcc1.T
     mfcc2 = mfcc2.T
 
-    distance, _ = fastdtw(mfcc1, mfcc2, dist=euclidean)
+    distance, path = fastdtw(mfcc1, mfcc2, dist=cosine)
 
-    return distance / len(mfcc1)
+    return distance / len(path)
 
 @app.get("/")
 def root():
@@ -70,7 +70,9 @@ def authenticate(req: AuthRequest):
     mfcc = pickle.loads(decrypted_bytes)
     mfcc = np.array(mfcc)
 
-    if mfcc.shape != (20, 216):
+    if mfcc.shape[0] != 19:
+        return {"error": f"Invalid MFCC shape {mfcc.shape}"}
+     if mfcc.shape[1] > 216:
         return {"error": f"Invalid MFCC shape {mfcc.shape}"}
 
     file_path = os.path.join(DATA_DIR, f"{req.user_id}.npy")
@@ -85,7 +87,7 @@ def authenticate(req: AuthRequest):
 
     distance = compare_mfcc(mfcc, stored)
 
-    THRESHOLD = 50 # threshold for MFCC match -- may need tuning
+    THRESHOLD = 0.3 # threshold for MFCC match -- may need tuning
 
     if distance < THRESHOLD:
         return {
