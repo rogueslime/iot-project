@@ -76,7 +76,7 @@ def authenticate(req: AuthRequest):
 
     if mfcc.shape[0] != 19:
         return {"error": f"Invalid MFCC shape {mfcc.shape}"}
-     if mfcc.shape[1] > 216:
+    if mfcc.shape[1] > 216:
         return {"error": f"Invalid MFCC shape {mfcc.shape}"}
 
     file_path = os.path.join(DATA_DIR, f"{req.user_id}.npy")
