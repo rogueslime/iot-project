@@ -44,7 +44,11 @@ def compare_mfcc(mfcc1, mfcc2):
 
     distance, path = fastdtw(mfcc1, mfcc2, dist=cosine)
 
-    return distance / len(path)
+    distance = distance / len(path)
+    if np.isnan(distance):
+        return 1.0
+    
+    return distance 
 
 @app.get("/")
 def root():
