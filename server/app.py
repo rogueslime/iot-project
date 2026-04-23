@@ -102,10 +102,12 @@ def authenticate(req: AuthRequest):
 def send_message(req: MessageRequest):
     # Derive shared key
     key = derive_key(req.client_pub_key.encode())
+    print("Received message: ", req.ciphertext, "\n")
 
     # Decode
     iv = base64.b64decode(req.iv)
     ciphertext = base64.b64decode(req.ciphertext)
+    print("Decoded ciphertext: ", ciphertext, "\n")
 
     # Decrypt
     decrypted_bytes = decrypt(key, iv, ciphertext)
