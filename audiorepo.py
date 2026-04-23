@@ -224,7 +224,7 @@ def record(username):
 	sd.wait()
 	output = f"{username}.wav"
 	write(output, samplerate, recording)
-
+    print("Recording finished.")
 	y, sr = librosa.load(output)
 	
 	## This is another potential point of failure. The trimming may need to
