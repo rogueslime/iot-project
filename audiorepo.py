@@ -19,6 +19,7 @@ import pickle
 ## Generate client side key, TB
 client_private_key = ec.generate_private_key(ec.SECP256R1())
 client_public_key = client_private_key.public_key()
+private_bytes = client_private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption())
 
 def get_client_public_bytes():
     return client_public_key.public_bytes(
@@ -102,7 +103,7 @@ TARGET_FRAMES = 216
 # Print client keypair
 print("\nCLIENT KEYS:")
 print("\nClient Public Key: ",get_client_public_bytes().decode())
-print("\nClient Private Key: ", client_private_key)
+print("\nClient Private Key: ", private_bytes)
 # Print server public key
 print("\nSERVER PUBLIC KEY:")
 server_pub = get_server_public_key()
