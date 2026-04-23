@@ -83,7 +83,7 @@ def send_to_server(username, mfcc):
 TARGET_MFCC = 20
 TARGET_FRAMES = 216
 
-def fix_mfcc_shape(mfcc):
+"""def fix_mfcc_shape(mfcc):
     if mfcc.shape[0] > TARGET_MFCC:
         mfcc = mfcc[:TARGET_MFCC, :]
     elif mfcc.shape[0] < TARGET_MFCC:
@@ -97,7 +97,7 @@ def fix_mfcc_shape(mfcc):
         mfcc = np.pad(mfcc, ((0, 0), (0, pad)), mode='constant')
 
     return mfcc
-
+"""
 
 # Print client keypair
 print("\nCLIENT KEYS:")
@@ -236,7 +236,7 @@ def record(username):
 	## This is for debugging the trim 
 	print(librosa.get_duration(y=y, sr=sr))
 	
-	"""mfccs = librosa.feature.mfcc(y=y, sr=sr)
+	mfccs = librosa.feature.mfcc(y=y, sr=sr)
 	
 	## This drops the volume coefficient of the mfcc
 	mfccs = mfccs[1:, :]
@@ -253,6 +253,7 @@ def record(username):
 	mfccs = mfccs - np.mean(mfccs, axis=1, keepdims=True)
 	# Fix shape
 	mfccs = fix_mfcc_shape(mfccs)
+	"""
 	print("MFCC shape:", mfccs.shape)  # should ALWAYS be (20, 216)
 	
 	return mfccs
