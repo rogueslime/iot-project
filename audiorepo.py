@@ -224,7 +224,7 @@ def record(username):
 	sd.wait()
 	output = f"{username}.wav"
 	write(output, samplerate, recording)
-    print("Recording finished.")
+	print("Recording finished.")
 	y, sr = librosa.load(output)
 	
 	## This is another potential point of failure. The trimming may need to
@@ -254,7 +254,7 @@ def record(username):
 	# Fix shape
 	mfccs = fix_mfcc_shape(mfccs)
 	"""
-	print("MFCC shape:", mfccs.shape)  # should ALWAYS be (20, 216)
+	print("MFCC shape:", mfccs.shape)  # should ALWAYS be (19, x) with x being 216 or less
 	
 	return mfccs
 
