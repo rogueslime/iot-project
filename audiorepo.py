@@ -257,7 +257,39 @@ def record(username):
 	
 	return mfccs
 
+# Secure message send
+def send_secure_message(sender, recipient, message):
+    server_pub = get_server_public_key()
 
+    key = derive_shared_key(server_pub)
+
+    payload_data = {
+        "sender": sender,
+        "recipient": recipient,
+        "message": message
+    }
+
+    data_bytes = pickle.dumps(payload_data)
+
+    # Step 4: encrypt
+    iv = os.urandom(16)
+    cipher = Cipher(algorithms.AES(key), modes.CFB(iv))
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(data_bytes) + encryptor.finalize()
+    print("Message before encryption: ", message,"\n")
+    print("Encrypted message: ", ciphertext,"\n")
+
+    payload = {
+        "sender_id": sender,
+        "recipient_id": recipient,
+        "client_pub_key": get_client_public_bytes().decode(),
+        "iv": base64.b64encode(iv).decode(),
+        "ciphertext": base64.b64encode(ciphertext).decode()
+    }
+
+    res = requests.post("http://localhost:8000/send-message", json=payload)
+
+    return res.json()
 
 def main():
 	print("Please select an option")
@@ -280,8 +312,10 @@ def main():
 	if authorized:
 		print(f"Welcome {user}")
 		print()
-		message = input("Enter a message to send")
-		print("Add ECC and Send the message over here")
+		recipient = input("Enter recipient username: ")
+		message = input("Enter message: ")
+		response = send_secure_message(user, recipient, message)
+		print("Server response:", response)
 	else:
 		print("Begone foul demon")
 

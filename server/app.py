@@ -21,6 +21,13 @@ class AuthRequest(BaseModel):
     iv: str
     ciphertext: str
 
+class MessageRequest(BaseModel):
+    sender_id: str
+    recipient_id: str
+    client_pub_key: str
+    iv: str
+    ciphertext: str
+
 # Calculate distance of MFCCs
 def compare_mfcc(mfcc1, mfcc2):
     print("dtype mfcc1:", mfcc1.dtype)
@@ -90,3 +97,35 @@ def authenticate(req: AuthRequest):
             "status": "rejected",
             "distance": float(distance)
         }
+    
+@app.post("/send-message")
+def send_message(req: MessageRequest):
+    # Derive shared key
+    key = derive_key(req.client_pub_key.encode())
+
+    # Decode
+    iv = base64.b64decode(req.iv)
+    ciphertext = base64.b64decode(req.ciphertext)
+
+    # Decrypt
+    decrypted_bytes = decrypt(key, iv, ciphertext)
+
+    # Deserialize
+    data = pickle.loads(decrypted_bytes)
+
+    sender = data["sender"]
+    recipient = data["recipient"]
+    message = data["message"]
+
+    # Check recipient exists
+    file_path = os.path.join(DATA_DIR, f"{recipient}.npy")
+
+    if not os.path.exists(file_path):
+        return {"status": "failed", "reason": "recipient not found"}
+
+    print(f"\n📩 MESSAGE RECEIVED")
+    print(f"From: {sender}")
+    print(f"To: {recipient}")
+    print(f"Message: {message}")
+
+    return {"status": "sent", "to": recipient}
